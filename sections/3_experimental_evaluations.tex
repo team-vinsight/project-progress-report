@@ -1,0 +1,46 @@
+\section{Experimental Evaluations}
+This section summarizes the evaluation setup, platforms, and observed performance of representative VIO/VSLAM systems under comparable flight conditions. The focus is on localization stability, drift characteristics, and qualitative trajectory consistency in GPS-denied scenarios. Where applicable, both quantitative metrics (e.g., tracking quality, ATE, offsets) and qualitative observations (e.g., path coherence, landmark distribution) are reported.
+\subsection{Evaluation Platforms}
+\subsubsection{ModalAI Starling 2 Max}
+The Starling 2 Max by ModalAI integrates the VOXL 2 companion computer, integrated stereo tracking cameras for visual--inertial odometry, and a forward-facing RGB camera for vision-based perception. It is designed for autonomous navigation and AI research in GPS-denied environments.
+
+\subsubsection{Custom UAV Platform}
+Our custom UAV platform integrates an NVIDIA Jetson Orin NX 16GB companion computer and an Orbbec Gemini 2L RGB-D camera with a built-in IMU. The platform is designed for high-performance visual--inertial navigation and autonomous flight.
+
+\subsection{Evaluation Results}
+\noindent\textbf{Test Conditions:} Evaluations were conducted under good lighting with textured surfaces to ensure sufficient visual features. Each system was assessed for tracking continuity, drift behavior, and consistency between IMU and VIO estimates.
+
+\subsubsection{OpenVINS}
+OpenVINS demonstrated stable localization during the test run, achieving a tracking quality of 96\%. The IMU-to-VIO translation offsets remained small (\(\leq 0.09~\text{m}\)), and attitude angles stayed within \(\pm 1.4^{\circ}\), indicating minimal drift. The drone path visualization confirms a tight, controlled trajectory with well-distributed feature landmarks, consistent with reliable odometry under good lighting and textured surfaces.
+
+\subsubsection{qVIO}
+qVIO completed the test run but showed notably lower tracking quality at 75\%. The IMU-to-VIO translation offsets were larger (up to \(0.55~\text{m}\)), and attitude angles diverged more significantly, with yaw reaching \(-12.1^{\circ}\). The drone path visualization reflects this, with visible drift and looser path coherence compared to OpenVINS, suggesting higher susceptibility to accumulated estimation error under the same flight conditions.
+
+\subsubsection{PyCuVSLAM}
+PyCuVSLAM achieved stable tracking with moderate drift. Its GPU-accelerated pipeline maintained consistent pose estimates and supported loop-closure behavior, but trajectory smoothness was dependent on available GPU resources and system load. Overall performance was stronger than pure VIO baselines but less consistent than ORB-SLAM3 under identical conditions.
+
+\subsubsection{ORB-SLAM3}
+ORB-SLAM3 produced the most globally consistent trajectory in the tests. Loop closure and map reuse reduced long-term drift, yielding a tight path with minimal accumulated error. Tracking stability was strong, though the system required higher compute and careful initialization to avoid early-stage failures.
+
+\subsection{Discussion}
+Overall, OpenVINS exhibited stronger short-term stability and tighter trajectory consistency under the tested conditions, while qVIO showed larger accumulated errors and reduced tracking quality. These outcomes align with the expected behavior of pure VIO systems that lack loop-closure mechanisms and are therefore more vulnerable to long-term drift.
+
+\subsection{Summary}
+\begin{table}[H]
+\centering
+\caption{Comparison of VIO/VSLAM Frameworks}
+\label{tab:vio_vslam_summary}
+\begin{tabular}{|p{2.6cm}|p{3.6cm}|p{3.4cm}|p{3.8cm}|}
+\hline
+\textbf{Framework} & \textbf{Absolute Trajectory Error (ATE)} & \textbf{Long-Term Drift} & \textbf{Loop Closure / Map Reuse} \\
+\hline
+ORB-SLAM3 & 0.01--0.03 m & Eliminated & Yes (Global Map) \\
+\hline
+PyCuVSLAM & 0.1 m & Moderate & Yes \\
+\hline
+OpenVINS & 0.05 m & Accumulates over time & No (Pure VIO) \\
+\hline
+qVIO & 0.5 m & Accumulates over time & No (Pure VIO) \\
+\hline
+\end{tabular}
+\end{table}

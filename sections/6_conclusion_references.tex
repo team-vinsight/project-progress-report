@@ -1,0 +1,14 @@
+\section{Conclusion}
+This progress report presented the design and early validation of a Visual--Inertial Odometry (VIO) pipeline intended to enable reliable UAV navigation in GPS-restricted environments. Motivated by the limitations of GNSS in indoor, urban-canyon, and under-canopy scenarios, the work consolidated key VINS concepts and justified a tightly-coupled, optimization-driven approach as the most suitable foundation for robust state estimation under challenging sensing conditions.
+
+Building on these findings, the project implemented a modular ROS~2 architecture that integrates an RGB-D + IMU sensor (Orbbec Gemini~2L), an RGBD-Inertial ORB-SLAM3 back-end, a custom VIO bridge for frame transformation and yaw alignment, and a MAVROS interface that delivers vision-based pose estimates to PX4 for EKF2 fusion. A structured test strategy was defined to verify the system progressively from individual node correctness, to end-to-end topic flow, frame-transform validity, and flight-controller acceptance of \texttt{VISION\_POSITION\_ESTIMATE} messages.
+
+Initial results highlight the main practical challenges of real-world deployment---IMU initialization requirements, tracking degradation in low-texture scenes, yaw inconsistency between SLAM and the flight controller, SLAM reset-induced position discontinuities, and confusion across RDF/FLU/ENU/NED conventions---and document the mitigations introduced in software and operating procedure. These outcomes provide a concrete baseline for subsequent flight testing and quantitative benchmarking against the defined KPIs (drift, pose rate, yaw stability, latency, and reset frequency).
+
+Future work will focus on tethered and free-flight validation in GPS-denied environments, vibration characterization and mitigation, covariance and delay tuning for improved PX4 fusion behavior, and performance optimization (including GPU acceleration on the Jetson platform). Collectively, these steps aim to transition the current integrated prototype into a robust navigation module that can support higher-level autonomy tasks such as waypoint following and, ultimately, multi-UAV coordination in complex real-world missions.
+
+\section{References}
+\begingroup
+\noindent
+\printbibliography[heading=none]
+\endgroup

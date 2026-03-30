@@ -1,0 +1,104 @@
+\section{Literature Review}
+\sloppy
+
+This review begins by examining popular navigation methods for UAV operation in GPS-restricted environments, comparing their sensing principles, estimation strategies, and operational trade-offs. It then presents the fundamentals of VINS, covering sensor characteristics (camera/IMU), common fusion architectures (loosely vs. tightly coupled), back-end estimation (filtering vs. optimization), and representative geometric and learning-based systems used in practice.
+
+\subsection{Navigation Methods for UAVs in GPS-Denied Environments}
+
+Reliable navigation in GPS-denied environments is critical for autonomous UAV operation. Several sensing and estimation approaches have been developed, each offering different trade-offs in accuracy, robustness, computational complexity, and hardware requirements.
+
+\subsubsection{Visual-Inertial Navigation Systems (VINS)}
+
+Visual--Inertial Navigation Systems (VINS) tightly fuse camera and IMU measurements within a nonlinear optimization or filtering framework. The IMU provides high-rate motion propagation, while visual observations reduce drift through feature tracking and bundle adjustment. Modern approaches often employ sliding-window optimization or factor graph methods.
+
+VINS provides accurate 6-DoF pose estimation, real-time capability, and independence from external infrastructure, making it well suited for UAV navigation in GPS-denied environments \cite{qin2018vins, forster2017manifold, cadena2016slam}. However, performance depends on sufficient visual texture and computational resources.
+
+\subsubsection{LiDAR-Based Navigation}
+
+LiDAR-based navigation estimates UAV pose by registering three-dimensional point clouds. These systems are robust to illumination variations and provide strong geometric consistency. When fused with inertial sensors, LiDAR systems achieve improved robustness and long-term accuracy.
+
+Despite their precision, LiDAR sensors increase payload weight, power consumption, and system cost, which may limit their application in lightweight UAV platforms \cite{zhang2014loam, shan2018lego}.
+
+\subsubsection{Dead Reckoning and Pure Inertial Navigation}
+
+Dead reckoning estimates position by integrating motion measurements over time, typically using IMU data. Inertial navigation systems offer high update rates and short-term accuracy; however, errors accumulate rapidly due to sensor bias and noise. Consequently, pure inertial navigation is unsuitable for long-duration autonomous flight without external correction \cite{titterton2004strapdown}.
+
+\subsubsection{Optical Flow-Based Navigation}
+
+Optical flow-based navigation estimates relative motion by tracking pixel displacement between consecutive image frames. These methods are computationally efficient and lightweight, making them attractive for small UAV platforms. However, they primarily provide velocity estimates and suffer from drift over time. Performance is also sensitive to lighting conditions and surface texture \cite{scaramuzza2014vision}.
+
+\subsubsection{Beacon-Based Navigation}
+
+Beacon-based navigation systems, such as Ultra-Wideband (UWB) positioning, estimate location relative to fixed anchors using time-of-flight measurements. These systems can achieve high indoor accuracy but require pre-installed infrastructure and are geographically constrained \cite{ledergerber2015robot}.
+
+\subsubsection{Summary}
+\begin{table}[H]
+\centering
+\caption{Comparison of UAV Navigation Methods in GPS-Denied Environments}
+\label{tab:uav_navigation_methods}
+\begin{tabular}{|p{3cm}|p{4.2cm}|p{4.2cm}|p{3.4cm}|}
+\hline
+\textbf{Method} & \textbf{Key Principle} & \textbf{Strengths} & \textbf{Limitations} \\
+\hline
+Visual--Inertial Navigation (VINS) & Fuses camera and IMU in an optimization or filtering framework. & Accurate 6-DoF pose, real-time capable, no external infrastructure. & Requires visual texture and adequate compute. \\
+\hline
+LiDAR-Based Navigation & Registers 3D point clouds, often fused with IMU. & Strong geometric consistency, robust to lighting. & Higher payload, power, and cost. \\
+\hline
+Dead Reckoning / Pure Inertial & Integrates IMU measurements to estimate motion. & High update rate, simple sensing stack. & Rapid drift from bias and noise. \\
+\hline
+Optical Flow & Tracks pixel motion between frames for relative motion. & Lightweight, computationally efficient. & Primarily velocity estimates; drift, sensitive to lighting/texture. \\
+\hline
+Beacon-Based Navigation (e.g., UWB) & Ranges to fixed anchors for positioning. & High indoor accuracy. & Requires installed infrastructure; limited coverage. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Justification for Choosing Visual-Inertial Navigation}
+After comparing navigation methods for GPS-denied environments, Visual--Inertial Navigation Systems (VINS) were selected as the primary approach for this project.
+\begin{itemize}
+    \item Provides accurate 6-DoF pose estimation without external infrastructure.
+    \item Balances robustness and hardware feasibility for UAV platforms.
+    \item Leverages complementary camera and IMU sensing to reduce drift.
+    \item Supports real-time operation with established optimization and filtering pipelines.
+\end{itemize}
+
+
+\subsection{Overview of Visual Inertial Navigation}
+A comprehensive understanding of Visual–Inertial Navigation Systems (VINS) requires analyzing both their sensor foundations and estimation architectures. VINS performance is fundamentally constrained by the quality of IMU and visual measurements and the accuracy of their error models. MEMS-based IMUs, widely used in UAVs due to favorable SWaP-C characteristics, measure specific force and angular velocity using accelerometers and gyroscopes \cite{ref21}. However, their outputs are affected by bias, scale factor errors, and stochastic noise, which must be modeled and estimated online to prevent rapid drift \cite{ref21,ref23,ref24}. To ensure computational feasibility in tightly-coupled frameworks, IMU pre-integration combines high-rate inertial measurements between camera frames into efficient motion constraints \cite{ref20}. On the visual side, monocular configurations offer low cost and weight but cannot directly observe absolute scale without inertial fusion \cite{ref26,ref27}, whereas stereo setups provide immediate depth and metric scale at the expense of higher complexity and calibration requirements \cite{ref25,ref27}. Architecturally, tightly-coupled fusion—where raw visual and inertial data are jointly estimated—offers superior accuracy and robustness compared to loosely-coupled approaches \cite{ref28,ref29,ref30}. For state estimation, filtering methods such as the EKF provide computational efficiency but suffer from linearization-induced inconsistency \cite{openvins,orbslam3,cuvslam}, while optimization-based (smoothing) approaches, typically implemented with sliding-window nonlinear least squares, achieve higher accuracy by jointly minimizing visual and inertial residuals over multiple states \cite{ref30,openvins,qvio}.
+
+\subsection{Visual SLAM for UAV Navigation}
+
+Simultaneous Localization and Mapping (SLAM) is a fundamental technique in robotics that enables a robot or UAV to build a map of an unknown environment while estimating its own pose within that map. When the primary sensing modality is a camera, the process is referred to as Visual SLAM (V-SLAM).
+
+\subsubsection{Core Concept}
+
+Visual SLAM relies on detecting and tracking visual features across consecutive camera frames. These features, often keypoints or corners, are used to estimate the relative motion of the UAV. By accumulating these measurements, the system can reconstruct a map and simultaneously localize itself in 3D space.
+
+Modern V-SLAM algorithms often integrate multiple components:
+
+\begin{itemize}
+    \item \textbf{Feature Extraction and Tracking:} Identify salient points in each frame and match them across frames.
+    \item \textbf{Pose Estimation:} Compute the UAV’s camera motion based on the observed feature correspondences.
+    \item \textbf{Map Optimization:} Refine both UAV poses and 3D feature positions using techniques such as bundle adjustment or graph optimization.
+    \item \textbf{Loop Closure:} Detect when the UAV revisits previously mapped areas and correct accumulated drift.
+\end{itemize}
+
+\subsubsection{Applications in UAVs}
+
+Visual SLAM provides accurate 6-DoF pose estimates without relying on external signals, making it suitable for GPS-denied environments. It can operate with monocular, stereo, or RGB-D cameras and is often combined with inertial measurements in VINS frameworks for improved robustness \cite{qin2018vins, forster2017manifold, cadena2016slam}.
+
+\subsubsection{Advantages and Limitations}
+
+\textbf{Advantages:}
+\begin{itemize}
+    \item Operates independently of GNSS infrastructure.
+    \item Can provide dense or sparse 3D mapping for navigation and planning.
+    \item Compatible with lightweight UAV platforms using only cameras.
+\end{itemize}
+
+\textbf{Limitations:}
+\begin{itemize}
+    \item Performance depends on sufficient visual texture and lighting conditions.
+    \item Sensitive to motion blur and dynamic scenes.
+    \item Computationally demanding, especially for real-time, large-scale mapping.
+\end{itemize}

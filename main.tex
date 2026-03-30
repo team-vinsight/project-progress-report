@@ -1,0 +1,87 @@
+% !TEX root = main.tex
+
+\documentclass[12pt,a4paper]{article}
+\usepackage{graphicx} % For including images
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{geometry} % Adjust page margins
+\usepackage{setspace} % For line spacing
+\usepackage{titlesec} % For section formatting
+\usepackage{tocloft} % For TOC formatting
+\usepackage{float}  % allows H specifier
+\usepackage{placeins} % \FloatBarrier to stop floats crossing section boundaries
+\usepackage{silence}
+\usepackage{amsmath}
+\usepackage[backend=biber,style=ieee]{biblatex}
+\usepackage{pgfgantt} % put in preamble
+\addbibresource{references/intro.bib}
+\addbibresource{references/literature_review.bib}
+\addbibresource{references/vio_algorithms.bib}
+\addbibresource{references/methodology.bib}
+
+
+% Page setup
+\geometry{margin=1in}
+\setstretch{1.3} % Line spacing
+\setlength{\emergencystretch}{3em} % reduce overfull \hbox warnings
+\hbadness=10000 % suppress underfull \hbox warnings
+\hfuzz=20pt % ignore overfull \hbox warnings up to 20pt
+
+
+\title{
+{\Huge \textbf{Progress Report}} \\[1cm]
+\textbf{Visual-Inertial Navigation \\ 
+for Autonomous UAV Operation \\ 
+in GPS-Restricted Environments}
+\vspace{4cm}
+}
+
+
+\author{
+\textbf{Project Supervisors - Internal:} \\
+Prof. Chandana Gamage \\
+\\
+\textbf{Group Members:} \\
+\begin{tabular}{l l} % Two columns, left-aligned, no borders
+D. V. A. I. Delgahagoda & 210113L \\
+T. T. Kashmeera & 210279A \\
+K. D. R. P. Rathnayake & 210537N \\
+\end{tabular}
+\vspace{4cm}
+}
+\date{} 
+\begin{document}
+
+\maketitle
+\begin{center}
+Department of Computer Science and Engineering \\
+University of Moratuwa
+\end{center}
+\thispagestyle{empty} % No page number on title page
+
+\newpage
+\renewcommand{\contentsname}{\Large \textbf{Table of Content}}
+\tableofcontents
+\thispagestyle{empty}
+
+\newpage
+\renewcommand{\listfigurename}{\Large \textbf{Table of Figures}}
+\listoffigures
+\thispagestyle{empty} % Optional: no page number on this page
+
+\newpage
+\setcounter{page}{1} % Start numbering from here
+
+\input{sections/1_introduction.tex}
+\input{sections/2_literature_review_1.tex}
+\input{sections/2_literature_review_2.tex}
+\input{sections/2_literature_review_3.tex}
+\input{sections/3_experimental_evaluations.tex}
+\input{sections/3_methodology_1.tex}
+\input{sections/3_methodology_2.tex}
+\input{sections/3_methodology_3.tex}
+\FloatBarrier
+\input{sections/4_results_discussion}
+\input{sections/5_research_timeline.tex}
+\input{sections/6_conclusion_references.tex}
+\end{document}

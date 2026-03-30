@@ -1,0 +1,102 @@
+\section{Results and Discussion}
+
+\subsection {Testing and Validation Strategy}
+A progressive validation approach was adopted to verify the VIO system from individual components through to integrated flight. Each phase builds confidence before introducing additional complexity.
+
+
+\begin{table}[H]
+\centering
+\scriptsize % reduces font size
+\caption{Testing and Verification}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|p{2.6cm}|p{8.2cm}|p{5.0cm}|}
+\hline \textbf{Phase} & \textbf{Procedure} & \textbf{Purpose} \\
+\hline
+1.\ Component Verification & Independently verified each ROS~2 node: camera topics publishing at correct rates, ORB-SLAM3 tracking in standalone mode, MAVROS connecting to Pixhawk~6X Pro. & Ensures each component functions correctly in isolation before integration. \\
+\hline
+2.\ Topic Pipeline Verification & Used \texttt{ros2 topic hz} and \texttt{ros2 topic echo} to verify end-to-end data flow: camera $\rightarrow$ SLAM $\rightarrow$ VIO Bridge $\rightarrow$ MAVROS. Checked message types, frame IDs, and rates. & Confirms the data pipeline is correctly wired with proper topic remapping and QoS settings. \\
+\hline
+3.\ Frame Transform Validation & Manually moved the camera in known directions (forward, right, up) and verified the output pose moved in the expected ENU direction. Cross-referenced with \texttt{/mavros/imu/data} heading. & Validates the $R_{cb}$ rotation matrix and yaw correction produce physically correct pose output. \\
+\hline
+4.\ PX4 Fusion Verification & Monitored QGroundControl MAVLink Inspector for \texttt{VISION\_POSITION\_ESTIMATE} messages. Verified EKF2 accepted vision data (no rejection warnings). Checked \texttt{/mavros/local\_position/pose} matched vision input. & Confirms PX4 EKF2 is receiving, accepting, and fusing vision pose data into its state estimate. \\
+\hline
+5.\ Bench Testing (Props Off) & Complete system powered on the drone, propellers removed. Hand-carried through a trajectory while monitoring RViz2 and QGroundControl. Verified Position Mode could be armed. & End-to-end verification that the pose estimate is stable enough for PX4 to accept Position Mode, without risking hardware. \\
+\hline
+\end{tabular}}
+\label{tab:testing_verification}
+\end{table}
+
+
+\subsection{Performance Metrics (KPIs)}
+The following Key Performance Indicators are used to evaluate the VIO system:
+
+
+\begin{table}[H]
+\centering
+\scriptsize % reduces font size
+\caption{Performance Metrics (KPIs)}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|p{3.2cm}|p{2.6cm}|p{10.0cm}|}
+\hline \textbf{Metric} & \textbf{Target} & \textbf{Measurement Method} \\
+\hline
+Localization Drift & $< 10$ cm & Difference between start and end position after closed-loop trajectory \\
+\hline
+Pose Publish Rate & $> 10$ Hz (stable) & \texttt{ros2 topic hz /mavros/vision\_pose/pose} \\
+\hline
+Yaw Drift (corrected) & $< 5^\circ$ sustained & VIO Bridge diagnostic output (average drift over 30-sample window) \\
+\hline
+System Latency & $< 100$ ms & Timestamp delta between camera frame capture and vision pose publication \\
+\hline
+SLAM Reset Rate & $< 1$ per minute & VIO Bridge diagnostic reset counter \\
+\hline
+\end{tabular}}
+\label{tab:performance_metrics_kpis}
+
+\end{table}
+
+
+
+\subsection{Challenges \& Solutions}
+This section summarizes the primary integration challenges encountered and the corresponding mitigations implemented.
+
+\subsubsection{IMU Initialization Failure (\texttt{Not enough motion})}
+\paragraph{Problem}
+ORB-SLAM3 in Inertial mode requires sufficient translational motion to initialize IMU biases and estimate gravity. The system consistently failed to initialize when stationary.
+\paragraph{Solution}
+Disabled fast initialization (\texttt{IMU.fastInit=0}) and increased IMU noise parameters to be more tolerant. The operational procedure now requires gently sliding the drone left/right and up/down for 5--10~seconds after startup until tracking initializes.
+
+\subsubsection{SLAM Tracking Loss in Low-Texture Environments}
+\paragraph{Problem}
+White walls and uniform surfaces cause ORB feature extraction to fail, resulting in \texttt{Fail to track local map} errors.
+\paragraph{Solution}
+Increased ORB features to 1000 across 8 pyramid levels. Lowered the minimum FAST threshold to 7 for better feature detection in low-contrast regions. Operationally, environments are enriched with textured objects where possible.
+
+\subsubsection{Yaw Misalignment Between SLAM and PX4}
+\paragraph{Problem}
+SLAM initializes with arbitrary heading (Yaw$=0$), causing PX4 to receive poses that are yaw-rotated relative to its magnetometer heading. This resulted in circular flight patterns instead of straight lines.
+\paragraph{Solution}
+Implemented automatic yaw correction in the VIO Bridge using the AHRS heading from \texttt{/mavros/imu/data}. The bridge continuously monitors for drift and recalibrates when the average error exceeds $15^\circ$ over 30 samples.
+
+\subsubsection{SLAM Reset Causing Position Jumps}
+\paragraph{Problem}
+When ORB-SLAM3 loses tracking and re-initializes, the position jumps back to the origin, causing PX4 to command a dangerous correction movement.
+\paragraph{Solution}
+Implemented reset detection in the VIO Bridge: if the position jumps more than 0.5~m toward the origin, the bridge detects a reset and immediately recalibrates the yaw offset. This prevents a stale offset from compounding the jump with a heading error.
+
+\subsubsection{Coordinate Frame Confusion (RDF vs FLU vs ENU vs NED)}
+\paragraph{Problem}
+Multiple competing conventions across ORB-SLAM3 (optical/RDF), ROS (FLU/ENU), and PX4 (FRD/NED) caused initial integration failures where moving forward appeared as lateral motion.
+\paragraph{Solution}
+Created comprehensive frame documentation (\texttt{FRAME\_DETAILS.md}) and D2 diagrams. Derived and validated the $R_{cb}$ rotation matrix through systematic physical testing --- moving in each axis independently and verifying the output direction.
+
+\subsection{Next Steps}
+The following tasks are planned for the next phase of development:
+\begin{itemize}
+    \item \textbf{Tethered Flight Testing:} Perform first powered flights with safety tether to validate pose stability under propeller vibration and real aerodynamic conditions. Tune \texttt{EKF2\_EV\_DELAY} based on measured latency.
+    \item \textbf{Free Flight Validation:} Execute closed-loop autonomous trajectories in a GPS-denied indoor environment. Measure actual localization drift and compare against the 10~cm KPI target.
+    \item \textbf{Vibration Analysis \& Mitigation:} Characterize propeller-induced vibration effects on the camera and IMU. Implement soft-mounting or filtering if vibration degrades SLAM performance on the Holybro Jetson Pack.
+    \item \textbf{Covariance Tuning:} Implement dynamic covariance estimation based on ORB-SLAM3 tracking quality (number of matched features, inlier ratio) to give PX4 better confidence information.
+    \item \textbf{GPU Acceleration:} Leverage the Jetson Orin NX's 1024-core Ampere GPU for CUDA-accelerated ORB feature extraction and depth processing, reducing CPU load and improving latency.
+    \item \textbf{Autonomous Mission Integration:} Develop waypoint-following and return-to-home capabilities using the VIO pose as the primary navigation source.
+    \item \textbf{Performance Benchmarking:} Formal measurement of all KPIs during controlled flight tests, including CPU/GPU/RAM load on the Jetson Orin NX 16GB under sustained operation.
+\end{itemize}
