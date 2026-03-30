@@ -21,6 +21,7 @@ jobs:
         uses: xu-cheng/latex-action@v3
         with:
           root_file: main.tex
+          latexmk_use_biber: true
 
       - name: Prepare Deployment Files
         run: |
